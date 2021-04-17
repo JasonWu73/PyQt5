@@ -3,6 +3,8 @@ from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtGui as qtg
 
+import resources
+
 
 class SearchWidget(qtw.QWidget):
     submitted = qtc.pyqtSignal(str, bool)
@@ -12,12 +14,28 @@ class SearchWidget(qtw.QWidget):
         self.setLayout(qtw.QFormLayout())
         self.term_input = qtw.QLineEdit()
         self.case_checkbox = qtw.QCheckBox('Case Sensitive?')
-        self.submit_button = qtw.QPushButton('Search')
-        self.submit_button.clicked.connect(self.on_submit)
+        self.search_button = qtw.QPushButton('Search')
+        self.search_button.setObjectName('search_button')  # 用于样式表
+        search_image = qtg.QPixmap(':/images/search.svg')
+        gear_image = qtg.QPixmap(':/images/gear.svg')
+        search_icon = qtg.QIcon(search_image)
+        search_icon.addPixmap(gear_image, qtg.QIcon.Disabled)
+        self.search_button.setEnabled(False)
+        self.search_button.setIcon(search_icon)
+        self.search_button.clicked.connect(self.on_submit)
 
         self.layout().addRow('Search Term', self.term_input)
         self.layout().addRow('', self.case_checkbox)
-        self.layout().addRow('', self.submit_button)
+        self.layout().addRow('', self.search_button)
+
+        self.term_input.textChanged.connect(self.check_term)
+
+    @qtc.pyqtSlot(str)
+    def check_term(self, term):
+        if term:
+            self.search_button.setEnabled(True)
+        else:
+            self.search_button.setEnabled(False)
 
     @qtc.pyqtSlot()
     def on_submit(self):
@@ -48,11 +66,19 @@ class MainWindow(qtw.QMainWindow):
         self.statusBar().showMessage('Welcome to my editor', 2000)
 
         edit_toolbar = self.addToolBar('Edit')
-        edit_toolbar.addAction('Copy', self.text_edit.copy)
-        edit_toolbar.addAction('Cut', self.text_edit.cut)
-        edit_toolbar.addAction('Paste', self.text_edit.paste)
-        edit_toolbar.addAction('Undo', self.text_edit.undo)
-        edit_toolbar.addAction('Redo', self.text_edit.redo)
+
+        copy_icon = qtg.QIcon(qtg.QPixmap(':/images/copy.svg'))
+        cut_icon = qtg.QIcon(qtg.QPixmap(':/images/cut.svg'))
+        paste_icon = qtg.QIcon(qtg.QPixmap(':/images/paste.svg'))
+        undo_icon = qtg.QIcon(qtg.QPixmap(':/images/undo.svg'))
+        redo_icon = qtg.QIcon(qtg.QPixmap(':/images/redo.svg'))
+
+        edit_toolbar.addAction(copy_icon, 'Copy', self.text_edit.copy)
+        edit_toolbar.addAction(cut_icon, 'Cut', self.text_edit.cut)
+        edit_toolbar.addAction(paste_icon, 'Paste', self.text_edit.paste)
+        edit_toolbar.addAction(qtg.QIcon.fromTheme('edit-undo', undo_icon),
+                               'Undo', self.text_edit.undo)
+        edit_toolbar.addAction(redo_icon, 'Redo', self.text_edit.redo)
 
         search_dock = qtw.QDockWidget('Search')
         search_widget = SearchWidget()
@@ -95,7 +121,16 @@ class MainWindow(qtw.QMainWindow):
             self.statusBar().showMessage(f'Editing {filename}')
 
 
+style_sheets = '''
+QTextEdit {
+    background-color: #2E3440;
+    color: white;
+    font-size: 16px;
+}
+'''
+
 if __name__ == '__main__':
     app = qtw.QApplication(sys.argv)
+    app.setStyleSheet(style_sheets)
     w = MainWindow()
     sys.exit(app.exec_())
